@@ -4,6 +4,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { useState } from "react";
 import axios from "axios";
 
+
 export default function SendMessage() {
     const [value, setValue] = useState('')
     const [audioURL, setAudioURL] = useState('');
@@ -29,7 +30,7 @@ export default function SendMessage() {
             //OBTAIN VOICE DATA FROM ELEVENLABS
             const VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
             const _url = 'https://api.elevenlabs.io/v1/text-to-speech/' + VOICE_ID;
-            const options = {
+            const options: any = {
                 method: 'POST',
                 url: _url,
                 headers: {
@@ -46,21 +47,34 @@ export default function SendMessage() {
             // RECEIVE THE REQUEST FROM THE SERVER
             const speechDetails = await axios.request(options);
 
-            //PLAY TTS
+            // PLAY TTS
             const blob = new Blob([speechDetails.data], { type: 'audio/mpeg' });
 
-            // Create a URL for the blob object
-            const url = URL.createObjectURL(blob);
+            // SEND TO DISCORD BOT
+            //
+            const formData = new FormData();
+            formData.append('audioBlob', blob, 'audio.wav');
 
-            // Set the audio URL state variable to the newly created URL
+            fetch('http://localhost:8000/tts-audio', {
+                method: 'POST',
+                body: formData
+                }).then(response => {
+                console.log('Audio uploaded successfully');
+                }).catch(error => {
+                console.error('Error uploading audio:', error);
+                });
+            //
+
+            // BLOB URL
+            const url = URL.createObjectURL(blob);
             setAudioURL(url);
 
             //PLAY AUDIO
             const audioElement = new Audio();
             audioElement.src = url;
-            audioElement.play().then(() => { 
-                console.log(url);
-                //URL.revokeObjectURL(url) 
+            audioElement.play().then(() => {
+                //console.log(url);
+                URL.revokeObjectURL(url)
             });
         } catch (error) {
             console.error('SendMessage - TTS Error: ', error);
@@ -74,9 +88,11 @@ export default function SendMessage() {
         if (value.trim() === "") {
             return;
         }
+
         //SET TEMP VAR TO VALUE AND RESET VALUE OF MESSAGEBOX -> increase responsiveness
         const tempValue = value;
         setValue("");
+
         //ADD MESSAGE TO FIRESTORE
         try {
             const { uid, displayName } = currentUser;
@@ -91,6 +107,8 @@ export default function SendMessage() {
         }
         //SEND MESSAGE TO AI SYSTEM
         try {
+            console.log('sending: ', tempValue);
+
             const response = await fetch('http://localhost:8000/ask', {
                 method: 'POST',
                 headers: {
@@ -140,8 +158,12 @@ export default function SendMessage() {
                 </button>
             </form>
             {/* <button
-                onClick={()=>handleTTSMessage('hello')}
+                onClick={() => handleTTSMessage('hello')}
                 className="btn w-auto rounded-none px-5 rounded-r-lg btn-accent">Debug: TTS
+            </button> */}
+            {/* <button
+                onClick={async() => await fetch('http://localhost:8000/dev')}
+                className="btn w-auto rounded-none px-5 rounded-r-lg btn-accent">Debug: Discord TTS
             </button> */}
         </div>
     );
