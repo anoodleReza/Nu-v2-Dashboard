@@ -1,23 +1,42 @@
 import { UserAuthentication } from "@/context/AuthContext";
 import { db } from "@/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
-export default function SendMessage() {
+export default function MicrophoneInput() {
     const [value, setValue] = useState('')
     const [audioURL, setAudioURL] = useState('');
 
     // @ts-ignore
     const { currentUser } = UserAuthentication();
 
-    function removeAfterSymbol(str: string, key: string) {
-        const index = str.indexOf(key); // Find the index of "$$"
-        if (index !== -1) { // If "$$" is found in the string
-            return str.substring(0, index); // Return the substring before "$$"
-        } else {
-            return str; // Return the original string if "$$" is not found
+    //microphone input
+    const mediaRecorderRef = useRef(null);
+    const [audioData, setAudioData] = useState(null);
+
+    const handleVoiceInput = async () => {
+        if (!window.MediaRecorder) {
+            alert('MediaRecorder not supported in your browser');
+            return;
         }
-    }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // @ts-ignore
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        // @ts-ignore
+        mediaRecorderRef.current.ondataavailable = (e) => {
+            setAudioData(e.data);
+        };
+        // @ts-ignore
+        mediaRecorderRef.current.start();
+    };
+    const handleVoiceStop = () => {
+        if (mediaRecorderRef.current) {
+            // @ts-ignore
+            mediaRecorderRef.current.stop();
+        }
+    };
 
     //SEND TO AI ENGINE
     const handleSendMessage = async (e: any) => {
@@ -70,27 +89,18 @@ export default function SendMessage() {
         }
     }
 
-    const handleVoiceInput = async () => {
-
-    }
     return (
         <div className="bg-base-100 fixed bottom-0 w-full py-10 shadow-lg">
             {/* USER INPUT FORM */}
 
             <form
                 onSubmit={handleSendMessage}
-                className="containerWrap flex px-2">
-
-                <input
-                    type="text"
-                    value={value}
-                    onChange={e => setValue(e.target.value)}
-                    className="input w-full focus:outline-none rounded-none bg-gray-500">
-
-                </input>
+                className="containerWrap flex px-2 justify-center">
                 <button
-                    type="submit"
-                    className="btn w-auto rounded-none px-5 rounded-r-lg btn-accent">Send
+                    onMouseDown={handleVoiceInput}
+                    onMouseUp={handleVoiceStop}
+                    className="btn w-auto rounded-lg px-5 btn-accent">
+                    Record
                 </button>
             </form>
         </div>

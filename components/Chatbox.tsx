@@ -8,6 +8,7 @@ export default function Chatbox() {
     const [messages, setMessages] = useState([]);
 
     const scrollToBottom = () => {
+        // @ts-ignore
         messagesEndRef.current.scrollIntoView({behavior: "smooth"})
     }
 

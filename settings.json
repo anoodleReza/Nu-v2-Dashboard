@@ -1,4 +1,1 @@
-{
-    "ttsmode": "discord",
-    "aimode": "gpt3.5"
-}
+{"ttsmode":"discord","aimode":"gpt3.5","aikey":"12345","ttskey":"12345","discordkey":"discord-key"}
